@@ -43,18 +43,19 @@ pipeline {
             }
         }
 
-        stage('Trivy Scan') {
-            steps {
-                echo '🔒 Scan de vulnérabilités Trivy...'
-                sh """
-                    trivy image \
-                        --exit-code 0 \
-                        --severity HIGH,CRITICAL \
-                        --format table \
-                        ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-                """
-            }
-        }
+ stage('Trivy Scan') {
+    steps {
+        echo '🔒 Scan de vulnérabilités Trivy...'
+        sh """
+            trivy image \
+                --cache-dir /tmp/trivy-cache \
+                --exit-code 0 \
+                --severity HIGH,CRITICAL \
+                --format table \
+                ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+        """
+    }
+}
 
         stage('Push Docker Hub') {
             steps {
