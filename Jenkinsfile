@@ -19,21 +19,23 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                echo '🔍 Analyse de code SonarQube...'
-                sh '''
-                    docker run --rm \
-                        --network host \
-                        -v $(pwd):/usr/src \
-                        sonarsource/sonar-scanner-cli \
-                        -Dsonar.projectKey=todo-app \
-                        -Dsonar.sources=/usr/src/app \
-                        -Dsonar.host.url=${SONAR_URL} \
-                        -Dsonar.token=${SONAR_TOKEN}
-                '''
-            }
+     stage('SonarQube Analysis') {
+    steps {
+        echo '🔍 Analyse de code SonarQube...'
+        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+            sh '''
+                docker run --rm \
+                    --network host \
+                    -v $(pwd):/usr/src \
+                    sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=todo-app \
+                    -Dsonar.sources=/usr/src/app \
+                    -Dsonar.host.url=http://localhost:9000 \
+                    -Dsonar.token=${SONAR_TOKEN}
+            '''
         }
+    }
+}
 
         stage('Build Docker Image') {
             steps {
