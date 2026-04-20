@@ -2,12 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER     = 'fouedddd'
-        IMAGE_NAME         = 'todo-app'
-        IMAGE_TAG          = "${BUILD_NUMBER}"
-        SONAR_URL          = 'http://localhost:9000'
-        SONAR_TOKEN        = credentials('sonar-token')
-        DOCKERHUB_CREDS    = credentials('dockerhub-creds')
+        DOCKERHUB_USER  = 'fouedddd'
+        IMAGE_NAME      = 'todo-app'
+        IMAGE_TAG       = "${BUILD_NUMBER}"
+        DOCKERHUB_CREDS = credentials('dockerhub-creds')
     }
 
     stages {
@@ -19,23 +17,23 @@ pipeline {
             }
         }
 
-     stage('SonarQube Analysis') {
-    steps {
-        echo '🔍 Analyse de code SonarQube...'
-        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-            sh '''
-                docker run --rm \
-                    --network host \
-                    -v $(pwd):/usr/src \
-                    sonarsource/sonar-scanner-cli \
-                    -Dsonar.projectKey=todo-app \
-                    -Dsonar.sources=/usr/src/app \
-                    -Dsonar.host.url=http://localhost:9000 \
-                    -Dsonar.token=${SONAR_TOKEN}
-            '''
+        stage('SonarQube Analysis') {
+            steps {
+                echo '🔍 Analyse de code SonarQube...'
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        docker run --rm \
+                            --network host \
+                            -v $(pwd):/usr/src \
+                            sonarsource/sonar-scanner-cli \
+                            -Dsonar.projectKey=todo-app \
+                            -Dsonar.sources=/usr/src/app \
+                            -Dsonar.host.url=http://192.168.100.133:9000 \
+                            -Dsonar.token=$SONAR_TOKEN
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Build Docker Image') {
             steps {
@@ -47,40 +45,39 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 echo '🔒 Scan de vulnérabilités Trivy...'
-                sh '''
+                sh """
                     trivy image \
                         --exit-code 0 \
                         --severity HIGH,CRITICAL \
                         --format table \
                         ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-                '''
+                """
             }
         }
 
         stage('Push Docker Hub') {
             steps {
                 echo '📤 Push de l image sur Docker Hub...'
-                sh '''
+                sh """
                     echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
                     docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
                     docker tag ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_USER}/${IMAGE_NAME}:latest
                     docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest
-                '''
+                """
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
                 echo '☸️ Déploiement sur Kubernetes...'
-                sh '''
+                sh """
                     sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" k8s/deployment.yaml
                     kubectl apply -f k8s/deployment.yaml
                     kubectl apply -f k8s/service.yaml
                     kubectl rollout status deployment/todo-app
-                '''
+                """
             }
         }
-
     }
 
     post {
