@@ -8,31 +8,40 @@ pipeline {
         DOCKERHUB_CREDS = credentials('dockerhub-creds')
     }
 
-stage('OWASP Dependency Check') {
-    steps {
-        echo '🔐 Analyse des dépendances OWASP...'
-        sh '''
-            mkdir -p reports
-            docker run --rm \
-                --network host \
-                -v $(pwd):/src \
-                -v $(pwd)/reports:/report \
-                owasp/dependency-check:latest \
-                --scan /src/app \
-                --format HTML \
-                --format XML \
-                --out /report \
-                --prettyPrint \
-                --disableYarnAudit \
-                --disableNodeAudit
-        '''
-    }
-    post {
-        always {
-            dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo '📥 Récupération du code source...'
+                checkout scm
+            }
         }
-    }
-}
+
+        stage('OWASP Dependency Check') {
+            steps {
+                echo '🔐 Analyse des dépendances OWASP...'
+                sh '''
+                    mkdir -p reports
+                    docker run --rm \
+                        --network host \
+                        -v $(pwd):/src \
+                        -v $(pwd)/reports:/report \
+                        owasp/dependency-check:latest \
+                        --scan /src/app \
+                        --format HTML \
+                        --format XML \
+                        --out /report \
+                        --prettyPrint \
+                        --disableYarnAudit \
+                        --disableNodeAudit
+                '''
+            }
+            post {
+                always {
+                    dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
+                }
+            }
+        }
 
         stage('SonarQube Analysis') {
             steps {
