@@ -17,24 +17,39 @@ pipeline {
             }
         }
 
-   	stage('SonarQube Analysis') {
-    	steps {
-        echo '🔍 Analyse de code SonarQube...'
-        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-            sh """
-                docker run --rm \
-                    --network host \
-                    -v \$(pwd):/usr/src \
-                    -e SONAR_TOKEN=${SONAR_TOKEN} \
-                    sonarsource/sonar-scanner-cli \
-                    -Dsonar.projectKey=todo-app \
-                    -Dsonar.sources=/usr/src/app \
-                    -Dsonar.host.url=http://192.168.100.133:9000 \
-                    -Dsonar.token=${SONAR_TOKEN}
-            """
+        stage('OWASP Dependency Check') {
+            steps {
+                echo '🔐 Analyse des dépendances OWASP...'
+                dependencyCheck additionalArguments: '''
+                    --scan ./app
+                    --format HTML
+                    --format XML
+                    --out ./reports
+                    --prettyPrint
+                ''', odcInstallation: 'OWASP-DC'
+
+                dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
+            }
         }
-    }
-}
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo '🔍 Analyse de code SonarQube...'
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                        docker run --rm \
+                            --network host \
+                            -v \$(pwd):/usr/src \
+                            -e SONAR_TOKEN=${SONAR_TOKEN} \
+                            sonarsource/sonar-scanner-cli \
+                            -Dsonar.projectKey=todo-app \
+                            -Dsonar.sources=/usr/src/app \
+                            -Dsonar.host.url=http://192.168.100.133:9000 \
+                            -Dsonar.token=${SONAR_TOKEN}
+                    """
+                }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -43,19 +58,19 @@ pipeline {
             }
         }
 
- stage('Trivy Scan') {
-    steps {
-        echo '🔒 Scan de vulnérabilités Trivy...'
-        sh """
-            trivy image \
-                --cache-dir /tmp/trivy-cache \
-                --exit-code 0 \
-                --severity HIGH,CRITICAL \
-                --format table \
-                ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-        """
-    }
-}
+        stage('Trivy Scan') {
+            steps {
+                echo '🔒 Scan de vulnérabilités Trivy...'
+                sh """
+                    trivy image \
+                        --cache-dir /tmp/trivy-cache \
+                        --exit-code 0 \
+                        --severity HIGH,CRITICAL \
+                        --format table \
+                        ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                """
+            }
+        }
 
         stage('Push Docker Hub') {
             steps {
