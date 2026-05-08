@@ -17,26 +17,23 @@ pipeline {
             }
         }
         
-        stage('Fetch Secrets from Vault') {
+stage('Fetch Secrets from Vault') {
     steps {
         echo '🔐 Récupération des secrets depuis Vault...'
         script {
-            // Récupérer les secrets DB
             def dbPassword = sh(
-                script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root vault kv get -field=password secret/todo-app/db",
+                script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root /usr/local/bin/vault kv get -field=password secret/todo-app/db",
                 returnStdout: true
             ).trim()
 
             def dbUsername = sh(
-                script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root vault kv get -field=username secret/todo-app/db",
+                script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root /usr/local/bin/vault kv get -field=username secret/todo-app/db",
                 returnStdout: true
             ).trim()
 
-            // Stocker comme variables d'environnement
             env.DB_PASSWORD = dbPassword
             env.DB_USERNAME = dbUsername
-
-            echo "✅ Secrets récupérés depuis Vault avec succès !"
+            echo "✅ Secrets récupérés depuis Vault !"
         }
     }
 }
