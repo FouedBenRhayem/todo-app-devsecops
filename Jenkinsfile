@@ -12,14 +12,14 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo '📥 Récupération du code source...'
+                echo ' Récupération du code source...'
                 checkout scm
             }
         }
         
 stage('Fetch Secrets from Vault') {
     steps {
-        echo '🔐 Récupération des secrets depuis Vault...'
+        echo ' Récupération des secrets depuis Vault...'
         script {
             def dbPassword = sh(
                 script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root /usr/local/bin/vault kv get -field=password secret/todo-app/db",
@@ -33,7 +33,7 @@ stage('Fetch Secrets from Vault') {
 
             env.DB_PASSWORD = dbPassword
             env.DB_USERNAME = dbUsername
-            echo "✅ Secrets récupérés depuis Vault !"
+            echo " Secrets récupérés depuis Vault !"
         }
     }
 }
@@ -67,7 +67,7 @@ stage('Fetch Secrets from Vault') {
 
         stage('Trivy Scan') {
             steps {
-                echo '🔒 Scan de vulnérabilités Trivy...'
+                echo ' Scan de vulnérabilités Trivy...'
                 sh """
                     trivy image \
                         --cache-dir /tmp/trivy-cache \
@@ -81,7 +81,7 @@ stage('Fetch Secrets from Vault') {
 
         stage('Push Docker Hub') {
             steps {
-                echo '📤 Push de l image sur Docker Hub...'
+                echo ' Push de l image sur Docker Hub...'
                 sh """
                     echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
                     docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
@@ -93,7 +93,7 @@ stage('Fetch Secrets from Vault') {
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo '☸️ Déploiement sur Kubernetes...'
+                echo ' Déploiement sur Kubernetes'
                 sh """
                     sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" k8s/deployment.yaml
                     kubectl apply -f k8s/deployment.yaml
@@ -106,10 +106,10 @@ stage('Fetch Secrets from Vault') {
 
     post {
         success {
-            echo '✅ Pipeline terminé avec succès !'
+            echo ' Pipeline terminé avec succès !'
         }
         failure {
-            echo '❌ Pipeline échoué — vérifiez les logs.'
+            echo ' Pipeline échoué — vérifiez les logs.'
         }
     }
 }
