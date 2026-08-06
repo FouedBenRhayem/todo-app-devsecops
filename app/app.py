@@ -20,6 +20,9 @@ def init_db():
         CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY,
             title VARCHAR(200) NOT NULL,
+            description TEXT DEFAULT '',
+            priority VARCHAR(20) DEFAULT 'Medium',
+            due_date VARCHAR(20) DEFAULT '',
             done BOOLEAN DEFAULT FALSE
         )
     ''')
@@ -35,8 +38,17 @@ def health():
 def get_tasks():
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, title, done FROM tasks")
-    tasks = [{"id": r[0], "title": r[1], "done": r[2]} for r in cur.fetchall()]
+    cur.execute("SELECT id, title, description, priority, due_date, done FROM tasks")
+    tasks = [
+        {
+            "id": r[0],
+            "title": r[1],
+            "description": r[2],
+            "priority": r[3],
+            "dueDate": r[4],
+            "done": r[5]
+        } for r in cur.fetchall()
+    ]
     cur.close()
     conn.close()
     return jsonify(tasks), 200
@@ -48,19 +60,32 @@ def create_task():
         return jsonify({"error": "title is required"}), 400
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("INSERT INTO tasks (title) VALUES (%s) RETURNING id", (data['title'],))
+    cur.execute(
+        "INSERT INTO tasks (title, description, priority, due_date) VALUES (%s, %s, %s, %s) RETURNING id",
+        (data['title'], data.get('description', ''), data.get('priority', 'Medium'), data.get('dueDate', ''))
+    )
     task_id = cur.fetchone()[0]
     conn.commit()
     cur.close()
     conn.close()
-    return jsonify({"id": task_id, "title": data['title'], "done": False}), 201
+    return jsonify({
+        "id": task_id,
+        "title": data['title'],
+        "description": data.get('description', ''),
+        "priority": data.get('priority', 'Medium'),
+        "dueDate": data.get('dueDate', ''),
+        "done": False
+    }), 201
 
 @app.route('/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
     data = request.get_json()
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("UPDATE tasks SET done = %s WHERE id = %s", (data.get('done', True), task_id))
+    cur.execute(
+        "UPDATE tasks SET done = %s WHERE id = %s",
+        (data.get('done', True), task_id)
+    )
     conn.commit()
     cur.close()
     conn.close()
