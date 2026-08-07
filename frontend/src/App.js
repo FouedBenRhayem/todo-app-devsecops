@@ -56,69 +56,49 @@ export default function App() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({ title: "", description: "", priority: "Medium", dueDate: "" });
 
-  // Si pas connecté → afficher Auth
-  if (!auth) {
-    return <Auth onAuthenticated={(data) => setAuth(data)} />;
-  }
-
-  useEffect(() => {
-    fetch(`${API_URL}/tasks`, {
-      headers: { "Authorization": `Bearer ${auth.token}` }
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`GET /tasks failed (${res.status})`);
-        return res.json();
-      })
-      .then((data) => setTasks((data || []).map(normalizeTask)))
-      .catch((err) => setError(`Could not load tasks: ${err.message}`));
-  }, [auth]);
-
   const toggleMode = useCallback(() => {
     setMode((m) => (m === "dark" ? "light" : "dark"));
   }, []);
 
-  const addTask = useCallback(
-    (e) => {
-      e.preventDefault();
-      if (!form.title.trim()) return;
-      fetch(`${API_URL}/tasks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${auth.token}`
-        },
-        body: JSON.stringify(form)
+  useEffect(() => {
+    if (!auth) return;
+    fetch(`${API_URL}/tasks`, {
+      headers: { "Authorization": `Bearer ${auth.token}` }
+    })
+      .then((res) => res.json())
+      .then((data) => setTasks((data || []).map(normalizeTask)))
+      .catch((err) => setError(`Could not load tasks: ${err.message}`));
+  }, [auth]);
+
+  const addTask = useCallback((e) => {
+    e.preventDefault();
+    if (!form.title.trim() || !auth) return;
+    fetch(`${API_URL}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.token}` },
+      body: JSON.stringify(form)
+    })
+      .then((res) => res.json())
+      .then((created) => {
+        setTasks((prev) => [...prev, normalizeTask(created)]);
+        setForm({ title: "", description: "", priority: "Medium", dueDate: "" });
       })
-        .then((res) => {
-          if (!res.ok) throw new Error(`POST /tasks failed (${res.status})`);
-          return res.json();
-        })
-        .then((created) => {
-          setTasks((prev) => [...prev, normalizeTask(created)]);
-          setForm({ title: "", description: "", priority: "Medium", dueDate: "" });
-        })
-        .catch((err) => setError(`Could not add task: ${err.message}`));
-    },
-    [form, auth]
-  );
+      .catch((err) => setError(`Could not add task: ${err.message}`));
+  }, [form, auth]);
 
   const toggleComplete = useCallback((task) => {
+    if (!auth) return;
     const nextDone = !task.done;
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, done: nextDone } : t)));
     fetch(`${API_URL}/tasks/${task.id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${auth.token}`
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${auth.token}` },
       body: JSON.stringify({ done: nextDone })
-    }).catch((err) => {
-      setError(`Could not update task: ${err.message}`);
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, done: task.done } : t)));
-    });
+    }).catch((err) => setError(`Could not update task: ${err.message}`));
   }, [auth]);
 
   const deleteTask = useCallback((id) => {
+    if (!auth) return;
     setTasks((prev) => prev.filter((t) => t.id !== id));
     fetch(`${API_URL}/tasks/${id}`, {
       method: "DELETE",
@@ -127,6 +107,10 @@ export default function App() {
   }, [auth]);
 
   const logout = () => setAuth(null);
+
+  if (!auth) {
+    return <Auth onAuthenticated={(data) => setAuth(data)} />;
+  }
 
   const isDark = mode === "dark";
   const stats = {
@@ -137,7 +121,6 @@ export default function App() {
   const filtered = tasks.filter((t) =>
     filter === "all" ? true : filter === "active" ? !t.done : t.done
   );
-
   const themeVars = THEMES[mode];
 
   return (
@@ -167,7 +150,7 @@ export default function App() {
         .brand-accent{font-family:'Source Serif 4',serif;font-style:italic;font-size:1.75rem;color:var(--text-sub);}
         .topbar-right{display:flex;align-items:center;gap:10px;}
         .mode-btn{display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:9999px;font-size:.875rem;border:none;color:var(--text);}
-        .logout-btn{padding:10px 18px;border-radius:9999px;font-size:.875rem;border:none;color:var(--text);cursor:pointer;background:var(--glass-bg);}
+        .logout-btn{padding:10px 18px;border-radius:9999px;font-size:.875rem;border:none;color:var(--text);cursor:pointer;}
         .welcome{font-size:.875rem;color:var(--text-muted);}
         .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
         .stat-card{padding:22px;}
@@ -218,9 +201,7 @@ export default function App() {
               <button className="mode-btn liquid-glass hoverable" onClick={toggleMode}>
                 {isDark ? "☀️ Light" : "🌙 Dark"}
               </button>
-              <button className="logout-btn liquid-glass hoverable" onClick={logout}>
-                Logout
-              </button>
+              <button className="logout-btn liquid-glass hoverable" onClick={logout}>Logout</button>
             </div>
           </div>
 
