@@ -12,32 +12,31 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo ' Récupération du code source...'
+                echo '📥 Récupération du code source...'
                 checkout scm
             }
         }
-        
-stage('Fetch Secrets from Vault') {
-    steps {
-        echo ' Récupération des secrets depuis Vault...'
-        script {
-            def dbPassword = sh(
-                script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root /usr/local/bin/vault kv get -field=password secret/todo-app/db",
-                returnStdout: true
-            ).trim()
 
-            def dbUsername = sh(
-                script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root /usr/local/bin/vault kv get -field=username secret/todo-app/db",
-                returnStdout: true
-            ).trim()
+        stage('Fetch Secrets from Vault') {
+            steps {
+                echo '🔐 Récupération des secrets depuis Vault...'
+                script {
+                    def dbPassword = sh(
+                        script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root /usr/local/bin/vault kv get -field=password secret/todo-app/db",
+                        returnStdout: true
+                    ).trim()
 
-            env.DB_PASSWORD = dbPassword
-            env.DB_USERNAME = dbUsername
-            echo " Secrets récupérés depuis Vault !"
+                    def dbUsername = sh(
+                        script: "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root /usr/local/bin/vault kv get -field=username secret/todo-app/db",
+                        returnStdout: true
+                    ).trim()
+
+                    env.DB_PASSWORD = dbPassword
+                    env.DB_USERNAME = dbUsername
+                    echo "✅ Secrets récupérés depuis Vault !"
+                }
+            }
         }
-    }
-}
-
 
         stage('SonarQube Analysis') {
             steps {
@@ -67,7 +66,7 @@ stage('Fetch Secrets from Vault') {
 
         stage('Trivy Scan') {
             steps {
-                echo ' Scan de vulnérabilités Trivy...'
+                echo '🔒 Scan de vulnérabilités Trivy...'
                 sh """
                     trivy image \
                         --cache-dir /tmp/trivy-cache \
@@ -81,7 +80,7 @@ stage('Fetch Secrets from Vault') {
 
         stage('Push Docker Hub') {
             steps {
-                echo ' Push de l image sur Docker Hub...'
+                echo '📤 Push de l image sur Docker Hub...'
                 sh """
                     echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
                     docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
@@ -93,7 +92,7 @@ stage('Fetch Secrets from Vault') {
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo ' Déploiement sur Kubernetes'
+                echo '☸️ Déploiement sur Kubernetes...'
                 sh """
                     sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" k8s/deployment.yaml
                     kubectl apply -f k8s/deployment.yaml
@@ -102,14 +101,45 @@ stage('Fetch Secrets from Vault') {
                 """
             }
         }
+
+        stage('Build & Push Frontend') {
+            steps {
+                echo '🎨 Build du frontend React...'
+                sh """
+                    docker build -t fouedddd/todo-app-frontend:${IMAGE_TAG} ./frontend
+                    echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
+                    docker push fouedddd/todo-app-frontend:${IMAGE_TAG}
+                    docker tag fouedddd/todo-app-frontend:${IMAGE_TAG} fouedddd/todo-app-frontend:latest
+                    docker push fouedddd/todo-app-frontend:latest
+                """
+            }
+        }
+
+        stage('Deploy Frontend to Kubernetes') {
+            steps {
+                echo '🚀 Déploiement du frontend sur Kubernetes...'
+                sh """
+                    sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
+                    kubectl apply -f k8s/frontend-deployment.yaml
+                    kubectl rollout status deployment/frontend
+                """
+            }
+        }
+
     }
 
     post {
         success {
-            echo ' Pipeline terminé avec succès !'
+            echo '✅ Pipeline terminé avec succès !'
+            mail to: 'fouedbenrhayem@gmail.com',
+                 subject: "✅ Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} - SUCCESS",
+                 body: "Le pipeline a réussi.\nVoir les détails : ${env.BUILD_URL}"
         }
         failure {
-            echo ' Pipeline échoué — vérifiez les logs.'
+            echo '❌ Pipeline échoué — vérifiez les logs.'
+            mail to: 'fouedbenrhayem@gmail.com',
+                 subject: "❌ Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} - FAILED",
+                 body: "Le pipeline a échoué.\nVoir les logs : ${env.BUILD_URL}"
         }
     }
 }
