@@ -294,40 +294,6 @@ export default function Auth({ onAuthenticated }) {
 }
 
 
-const THEMES = {
-  dark: {
-    "--bg-grad": "linear-gradient(180deg, rgba(5,5,8,0.55), rgba(5,5,8,0.75))",
-    "--text": "#ffffff",
-    "--text-sub": "rgba(255,255,255,0.7)",
-    "--text-muted": "rgba(255,255,255,0.5)",
-    "--glass-bg": "rgba(255,255,255,0.01)",
-    "--glass-bg-strong": "rgba(255,255,255,0.02)",
-    "--border-grad":
-      "linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, transparent 40%, transparent 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%)",
-    "--border-grad-strong":
-      "linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 20%, transparent 40%, transparent 60%, rgba(255,255,255,0.2) 80%, rgba(255,255,255,0.5) 100%)",
-    "--icon-bg": "rgba(255,255,255,0.1)",
-    "--icon-bg-active": "rgba(255,255,255,0.18)",
-    "--input-bg": "rgba(255,255,255,0.05)",
-    "--error-bg": "rgba(255,255,255,0.12)"
-  },
-  light: {
-    "--bg-grad": "linear-gradient(180deg, rgba(255,255,255,0.6), rgba(225,225,232,0.8))",
-    "--text": "#16161a",
-    "--text-sub": "rgba(22,22,26,0.72)",
-    "--text-muted": "rgba(22,22,26,0.55)",
-    "--glass-bg": "rgba(0,0,0,0.02)",
-    "--glass-bg-strong": "rgba(0,0,0,0.03)",
-    "--border-grad":
-      "linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.08) 20%, transparent 40%, transparent 60%, rgba(0,0,0,0.08) 80%, rgba(0,0,0,0.22) 100%)",
-    "--border-grad-strong":
-      "linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.1) 20%, transparent 40%, transparent 60%, rgba(0,0,0,0.1) 80%, rgba(0,0,0,0.28) 100%)",
-    "--icon-bg": "rgba(0,0,0,0.07)",
-    "--icon-bg-active": "rgba(0,0,0,0.14)",
-    "--input-bg": "rgba(0,0,0,0.04)",
-    "--error-bg": "rgba(0,0,0,0.08)"
-  }
-};
 
 export default function Auth({ onAuthenticated }) {
   const [mode, setMode] = useState("dark");
