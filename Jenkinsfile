@@ -107,7 +107,7 @@ stage('Build & Push Frontend') {
         echo '🎨 Build du frontend React...'
         sh """
             docker build \
-                --build-arg REACT_APP_API_URL=http://a9cff14d2a75541d0b6d181e60508307-2024726922.us-east-1.elb.amazonaws.com:5000 \
+       --build-arg REACT_APP_API_URL=http://aa1475bb1103c4fc9908697c9010f17b-518833943.us-east-1.elb.amazonaws.com:5000 \
                 -t fouedddd/todo-app-frontend:${IMAGE_TAG} ./frontend
             echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
             docker push fouedddd/todo-app-frontend:${IMAGE_TAG}
