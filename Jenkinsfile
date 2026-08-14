@@ -102,11 +102,11 @@ pipeline {
             }
         }
 
-stage('Build & Push Frontend') {
+	stage('Build & Push Frontend') {
     steps {
         echo '🎨 Build du frontend React...'
         sh """
-            docker build \
+            docker build --no-cache \
        --build-arg REACT_APP_API_URL=http://aa1475bb1103c4fc9908697c9010f17b-518833943.us-east-1.elb.amazonaws.com:5000 \
                 -t fouedddd/todo-app-frontend:${IMAGE_TAG} ./frontend
             echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
