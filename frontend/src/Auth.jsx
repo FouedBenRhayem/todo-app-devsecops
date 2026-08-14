@@ -5,7 +5,7 @@ const API_URL = process.env.REACT_APP_API_URL || "";
 
 
 
-const VIDEO_SRC =
+const AUTH_VIDEO_SRC =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4";
 
 const THEMES = {
@@ -163,7 +163,7 @@ export default function Auth({ onAuthenticated }) {
       `}</style>
 
       <video className="video-bg" autoPlay muted loop playsInline>
-        <source src={VIDEO_SRC} type="video/mp4" />
+        <source src={AUTH_VIDEO_SRC} type="video/mp4" />
       </video>
       <div className="scrim" />
 
