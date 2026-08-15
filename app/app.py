@@ -7,12 +7,8 @@ import jwt
 import datetime
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-@app.before_request
-def handle_options():
-    if request.method == "OPTIONS":
-        response = app.make_default_options_response()
-        return respons
+CORS(app, origins="*", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], allow_headers=["Content-Type", "Authorization"])
+
 SECRET_KEY = "devsecops-secret-key"
 
 def get_db():
